@@ -1,138 +1,24 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { DiscountCodeService } from 'src/discount_code/discount_code.service';
-import { AreaService } from '../area/area.service';
 import { ProductService } from '../product/product.service';
-import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderRepository } from './order.repository';
-import { OrderProduct } from './schemas/order-product.schema';
 import { MailService } from '../mailer/mail.service';
-import { LoyalCustomerCreateOrderDto } from './dtos/loyalCustomerCreateOrder.dto';
-import { CreateOrderProduct } from './dtos/create-order-product.dto';
 import { GetListOrderQuery } from './dtos/getListOrderQuery.dto';
+import { ConfirmDeliveryOrderDto } from './dtos/confirmDeliveryOrder.dto';
+import { OrderStatus } from './enums/order-status.enum';
 
 @Injectable()
 export class OrderService {
   constructor(
     private readonly orderRepository: OrderRepository,
-    private readonly areaService: AreaService,
     private readonly productService: ProductService,
     private readonly mailService: MailService,
-    private readonly discountCodeService: DiscountCodeService,
   ) {}
 
-  async createOrder(createOrderDto: CreateOrderDto) {
-    const { products, customer_email } = createOrderDto;
-
-    const { productList, quantitySet, totalCost } =
-      await this.getTotalProductOrderCost(products);
-
-    const createdOrder = await this.orderRepository.createOrder(
-      createOrderDto,
-      productList.map<OrderProduct>((product) => {
-        const productId = product._id.toHexString();
-        return {
-          product_id: productId,
-          name: product.name,
-          price: product.price,
-          quantity: quantitySet[productId],
-          image: product.image,
-        };
-      }),
-      totalCost,
-    );
-    await this.mailService.sendNewOrderCreatedEmail(
-      customer_email,
-      createdOrder,
-    );
-  }
-
-  async loyalCustomerCreateOrder(
-    user_id: string,
-    customer_email: string,
-    createOrderDto: LoyalCustomerCreateOrderDto,
-  ) {
-    const { products } = createOrderDto;
-
-    const { productList, quantitySet, totalCost } =
-      await this.getTotalProductOrderCost(products);
-    let discount_amount = '0';
-    if (createOrderDto.discount_code)
-      discount_amount = await this.discountCodeService.applyingDiscountOnOrder(
-        createOrderDto.discount_code,
-        user_id,
-        { total_product_cost: totalCost },
-      );
-    const createdOrder = await this.orderRepository.createOrderWithDiscount(
-      {
-        ...createOrderDto,
-        customer_email,
-      },
-      productList.map<OrderProduct>((product) => {
-        const productId = product._id.toHexString();
-        return {
-          product_id: productId,
-          name: product.name,
-          price: product.price,
-          quantity: quantitySet[productId],
-          image: product.image,
-        };
-      }),
-      totalCost,
-      Number(discount_amount),
-    );
-    await this.mailService.sendNewOrderCreatedEmail(
-      customer_email,
-      createdOrder,
-    );
-  }
-
-  private async getTotalProductOrderCost(products: CreateOrderProduct[]) {
-    const productList = await this.productService.getProductsByIdList(
-      products.map((product) => product.product_id),
-    );
-    if (!productList.length)
-      throw new BadRequestException('No valid products specified.');
-    const productSet = Object.fromEntries(
-      productList.map((product) => [product._id.toString(), product]),
-    );
-    const quantitySet = Object.fromEntries(
-      products.map((orderedProduct) => [
-        orderedProduct.product_id,
-        orderedProduct.quantity,
-      ]),
-    );
-    let totalCost = 0;
-    for (const orderedProduct of products) {
-      const product = productSet[orderedProduct.product_id.toString()];
-      if (product.stock < orderedProduct.quantity)
-        throw new BadRequestException(
-          `Not enough stock for item: ${product.name}`,
-        );
-      await this.productService.findAndUpdateProductStockById(
-        orderedProduct.product_id.toString(),
-        orderedProduct.quantity,
-      );
-      totalCost +=
-        productSet[orderedProduct.product_id.toString()].price *
-        orderedProduct.quantity;
-    }
-    return {
-      totalCost,
-      quantitySet,
-      productList,
-    };
-  }
-
-  async getListOrder(
-    getListOrderQuery: GetListOrderQuery,
-    customer_email: string,
-  ) {
+  async getListOrder(getListOrderQuery: GetListOrderQuery) {
     const { page, limit, status } = { ...getListOrderQuery };
-    const query = {
-      customer_email,
-    };
+    const query = {};
     if (status) {
       Object.assign(query, {
         status: { $in: status.split(',').map((x) => +x) },
@@ -150,11 +36,79 @@ export class OrderService {
     };
   }
 
-  async getDetailOfAnOrder(order_id: string, customer_email: string) {
+  async getDetailOfAnOrder(order_id: string) {
     const query = {
-      customer_email,
       _id: order_id,
     };
     return this.orderRepository.findOneOrder(query);
+  }
+
+  async confirmDelivery(
+    order_id: string,
+    confirmDeliveryOrderDto: ConfirmDeliveryOrderDto,
+  ) {
+    const query = { _id: order_id, status: OrderStatus.NEW };
+    const updateOptions = {
+      status: OrderStatus.CONFIRMED,
+      ...confirmDeliveryOrderDto,
+    };
+    const order = await this.orderRepository.findOneOrderAndUpdate(
+      query,
+      updateOptions,
+    );
+    if (!order)
+      throw new BadRequestException(
+        'Can not confirm delivery this order ! The order does not exist or you are trying to confirm a non-new order !',
+      );
+    // TODO
+
+    // await Mailer.confirmDeliveryOrder(order.customer_email, order_id);
+    return order;
+  }
+
+  async confirmSucessfullyDeliveredOrder(order_id: string) {
+    const order = await this.orderRepository.findOneOrderAndUpdate(
+      { _id: order_id, status: OrderStatus.CONFIRMED },
+      { status: OrderStatus.DONE },
+    );
+    if (!order)
+      throw new BadRequestException(
+        'Can not confirm sucessfully delivered this order ! The order does not exist or you are trying to confirm successive of a non delivery-confirmation order !',
+      );
+    // TODO
+    // if (order.user_id) {
+    //   const toUpdatePointCustomer = await CustomerModel.findById(order.user_id);
+    //   toUpdatePointCustomer.point += order.total_product_cost;
+    //   toUpdatePointCustomer.rank_point += order.total_product_cost;
+    //   const ranks = Object.keys(CustomerRankEntry)
+    //     .filter(
+    //       (key) =>
+    //         Number.isNaN(Number(CustomerRankEntry[key])) &&
+    //         Number(key) <= toUpdatePointCustomer.rank_point,
+    //     )
+    //     .map(Number);
+    //   toUpdatePointCustomer.rank = ranks.indexOf(Math.max(...ranks));
+    //   await toUpdatePointCustomer.save();
+    // }
+    // await Mailer.confirmSuccessfulOrder(order.customer_email, order_id);
+    return order;
+  }
+
+  async cancelOrder(order_id: string) {
+    const order = await this.orderRepository.findOneOrderAndUpdate(
+      {
+        _id: order_id,
+        $or: [{ status: OrderStatus.NEW }, { status: OrderStatus.CONFIRMED }],
+      },
+      { status: OrderStatus.CANCELLED },
+    );
+    if (!order)
+      throw new BadRequestException(
+        'Can not cancel this order ! The order does not exist or you are trying to cancel a fully-successful/canceled order !',
+      );
+    // TODO
+
+    // await Mailer.cancelOrder(order.customer_email, order_id);
+    return order;
   }
 }

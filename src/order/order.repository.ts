@@ -1,46 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ReturnModelType } from '@typegoose/typegoose';
-import { FilterQuery } from 'mongoose';
-import { CreateOrderDto } from './dtos/create-order.dto';
-import { OrderStatus } from './enums/order-status.enum';
+import { FilterQuery, UpdateQuery } from 'mongoose';
 import { Order } from './schemas/order.schema';
-import { OrderProduct } from './schemas/order-product.schema';
 
 @Injectable()
 export class OrderRepository {
   constructor(
     @Inject(Order) private readonly orderModel: ReturnModelType<typeof Order>,
   ) {}
-
-  async createOrder(
-    createOrderDto: CreateOrderDto,
-    products: OrderProduct[],
-    totalProductCost: number,
-  ) {
-    return this.orderModel.create({
-      ...createOrderDto,
-      order_id: (await this.orderModel.estimatedDocumentCount()) + 1,
-      products,
-      status: OrderStatus.NEW,
-      total_product_cost: totalProductCost,
-    });
-  }
-
-  async createOrderWithDiscount(
-    createOrderDto: CreateOrderDto,
-    products: OrderProduct[],
-    totalProductCost: number,
-    discount: number,
-  ) {
-    return this.orderModel.create({
-      ...createOrderDto,
-      order_id: (await this.orderModel.estimatedDocumentCount()) + 1,
-      products,
-      status: OrderStatus.NEW,
-      total_product_cost: totalProductCost,
-      discount,
-    });
-  }
 
   async countNumberOfOrderWithQuery(
     query: FilterQuery<Order>,
@@ -57,11 +24,22 @@ export class OrderRepository {
       .find(query)
       .skip((page - 1) * limit)
       .limit(limit)
+      .populate('user_id')
       .lean()
       .exec();
   }
 
   async findOneOrder(query: FilterQuery<Order>): Promise<Order> {
     return this.orderModel.findOne(query).lean().exec();
+  }
+
+  async findOneOrderAndUpdate(
+    query: FilterQuery<Order>,
+    updateOptions: UpdateQuery<Order>,
+  ) {
+    return this.orderModel
+      .findOneAndUpdate(query, updateOptions, { new: true })
+      .lean()
+      .exec();
   }
 }

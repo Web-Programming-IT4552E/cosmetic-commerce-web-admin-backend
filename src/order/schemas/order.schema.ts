@@ -1,6 +1,7 @@
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { modelOptions, prop } from '@typegoose/typegoose';
 import { Types } from 'mongoose';
+import { User } from 'src/user/schemas/user.schema';
 import { getEnumValues } from '../../utils/enum-utils';
 import { OrderStatus } from '../enums/order-status.enum';
 import { OrderProduct } from './order-product.schema';
@@ -9,8 +10,8 @@ import { ShippingAddressDetail } from '../../shipping_address/schemas/shipping_a
 @modelOptions({
   schemaOptions: {
     timestamps: {
-      createdAt: 'create_time',
-      updatedAt: 'updated_at',
+      createdAt: 'created_time',
+      updatedAt: 'updated_time',
     },
   },
 })
@@ -34,7 +35,7 @@ export class Order {
    * Order user ID
    */
   @ApiProperty({ type: String })
-  @prop({ type: Types.ObjectId })
+  @prop({ type: Types.ObjectId, ref: () => User })
   user_id?: Types.ObjectId;
 
   @prop({ required: true })
