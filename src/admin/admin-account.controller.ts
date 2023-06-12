@@ -10,8 +10,13 @@ import {
   Put,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtDecodedData, Public } from 'src/common/decorators/auth.decorator';
+import {
+  JwtDecodedData,
+  Public,
+  Roles,
+} from 'src/common/decorators/auth.decorator';
 import { JwtPayload } from 'src/auth/dtos/jwt-payload.dto';
+import { UserType } from 'src/user/enums/user-type.enum';
 import { AdminAccountService } from './admin-account.service';
 import { ChangePasswordDto } from './dtos/changePassword.dto';
 import { ChangeProfileDto } from './dtos/changeProfile.dto';
@@ -25,6 +30,7 @@ export class AdminAccountController {
 
   @ApiBearerAuth()
   @ApiOperation({ description: 'Get current admin account' })
+  @Roles([UserType.ADMIN])
   @Get('')
   async getCurrentAdminAccountInformations(@JwtDecodedData() data: JwtPayload) {
     return this.adminService.getCurrentAdminAccountInformation(data.email);
@@ -34,6 +40,7 @@ export class AdminAccountController {
     description: 'Change password of current logged-in user',
   })
   @ApiBearerAuth()
+  @Roles([UserType.ADMIN])
   @Patch('/change/password')
   async changePassword(
     @JwtDecodedData() jwtPayload: JwtPayload,
@@ -52,6 +59,7 @@ export class AdminAccountController {
     description: 'Change profile (except password) of current logged-in user',
   })
   @ApiBearerAuth()
+  @Roles([UserType.ADMIN])
   @Put('/change/profile')
   async changeProfile(
     @Body() changeProfileDto: ChangeProfileDto,

@@ -1,7 +1,8 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtDecodedData } from 'src/common/decorators/auth.decorator';
+import { JwtDecodedData, Roles } from 'src/common/decorators/auth.decorator';
 import { JwtPayload } from 'src/auth/dtos/jwt-payload.dto';
+import { UserType } from 'src/user/enums/user-type.enum';
 import { DiscountCodeService } from './discount_code.service';
 import { GetListDiscountCodeQueryDto } from './dtos/getListDiscountCode.query.dto';
 
@@ -14,6 +15,7 @@ export class DiscountCodeController {
     description: 'get List Discount Code',
   })
   @ApiBearerAuth()
+  @Roles([UserType.ADMIN])
   @Get()
   getListDiscountCodes(
     @Query() getListDiscountCodeQueryDto: GetListDiscountCodeQueryDto,
@@ -29,6 +31,7 @@ export class DiscountCodeController {
     description: 'Get discount code detail',
   })
   @ApiBearerAuth()
+  @Roles([UserType.ADMIN])
   @Get(':id')
   findOne(
     @Param('id') discount_code_id: string,

@@ -7,7 +7,12 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtDecodedData, Public } from 'src/common/decorators/auth.decorator';
+import {
+  JwtDecodedData,
+  Public,
+  Roles,
+} from 'src/common/decorators/auth.decorator';
+import { UserType } from 'src/user/enums/user-type.enum';
 import { AuthService } from './auth.service';
 import { LoginRequestDto } from './dtos/login-request.dto';
 import { JwtPayload } from './dtos/jwt-payload.dto';
@@ -37,6 +42,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
+  @Roles([UserType.ADMIN])
   @Post('logout')
   async logout(@Req() req: any, @JwtDecodedData() data: JwtPayload) {
     const token = req.headers.authorization.split(' ')[1];

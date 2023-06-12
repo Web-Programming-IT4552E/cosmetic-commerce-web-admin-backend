@@ -16,6 +16,7 @@ import { JwtAuthGuard } from './common/guards/auth.guard';
 import { CommonModule } from './common/common.module';
 import { ShippingAddressModule } from './shipping_address/shipping_address.module';
 import { DiscountCodeModule } from './discount_code/discount_code.module';
+import { RoleGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -40,6 +41,10 @@ import { DiscountCodeModule } from './discount_code/discount_code.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RoleGuard,
     },
   ],
 })

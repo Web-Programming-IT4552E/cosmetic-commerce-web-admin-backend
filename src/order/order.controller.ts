@@ -1,7 +1,8 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtDecodedData } from 'src/common/decorators/auth.decorator';
+import { JwtDecodedData, Roles } from 'src/common/decorators/auth.decorator';
 import { JwtPayload } from 'src/auth/dtos/jwt-payload.dto';
+import { UserType } from 'src/user/enums/user-type.enum';
 import { OrderService } from './order.service';
 import { GetListOrderQuery } from './dtos/getListOrderQuery.dto';
 
@@ -14,6 +15,7 @@ export class OrderController {
     description: 'list order of current customer',
   })
   @ApiBearerAuth()
+  @Roles([UserType.ADMIN])
   @Get('')
   async getListOrder(
     @Query() getListOrderQuery: GetListOrderQuery,
@@ -26,6 +28,7 @@ export class OrderController {
     description: 'get detail order by id of current customer',
   })
   @ApiBearerAuth()
+  @Roles([UserType.ADMIN])
   @Get('/:id')
   async getDetailOrder(
     @Param('id') order_id: string,
