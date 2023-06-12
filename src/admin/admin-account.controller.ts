@@ -16,7 +16,6 @@ import { AdminAccountService } from './admin-account.service';
 import { ChangePasswordDto } from './dtos/changePassword.dto';
 import { ChangeProfileDto } from './dtos/changeProfile.dto';
 import { EmailDto } from './dtos/email.dto';
-import { RegisterUserDto } from './dtos/registerUser.dto';
 import { ResetPasswordDto } from './dtos/resetPassword.dto';
 
 @ApiTags('account')
@@ -29,16 +28,6 @@ export class AdminAccountController {
   @Get('')
   async getCurrentAdminAccountInformations(@JwtDecodedData() data: JwtPayload) {
     return this.adminService.getCurrentAdminAccountInformation(data.email);
-  }
-
-  @Public()
-  @Post('')
-  @ApiOperation({ description: 'Register new account' })
-  async register(@Body() registerUserDto: RegisterUserDto) {
-    await this.adminService.registerUser(registerUserDto);
-    return {
-      message: 'Success',
-    };
   }
 
   @ApiOperation({
@@ -72,13 +61,6 @@ export class AdminAccountController {
     return {
       message: 'Success',
     };
-  }
-
-  @ApiOperation({ description: 'Verify and active user' })
-  @Public()
-  @Get('/register/verify/:active_token')
-  async verify(@Param('active_token') activeToken: string) {
-    return this.adminService.verifyActiveForAdmin(activeToken);
   }
 
   @ApiOperation({
