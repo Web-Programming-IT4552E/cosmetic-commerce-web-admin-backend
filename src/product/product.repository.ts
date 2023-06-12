@@ -7,6 +7,8 @@ import {
   UpdateQuery,
 } from 'mongoose';
 import { Product } from './schemas/product.schema';
+import { ProductStatus } from './enums/product-status.enum';
+import { CreateProductDto } from './dtos/createProduct.dto';
 
 @Injectable()
 export class ProductRepository {
@@ -30,12 +32,13 @@ export class ProductRepository {
       .find(query)
       .skip((page - 1) * limit)
       .limit(limit)
+      .populate('category')
       .lean()
       .exec();
   }
 
   async getProductById(id: string): Promise<Product | null> {
-    return this.productModel.findById(id).lean().exec();
+    return this.productModel.findById(id).populate('category').lean().exec();
   }
 
   async getProductsByIdList(idList: string[]): Promise<Product[]> {
@@ -52,5 +55,12 @@ export class ProductRepository {
     updateOptions: UpdateQuery<Product>,
   ): Promise<Product | null> {
     return this.productModel.findOneAndUpdate(query, updateOptions);
+  }
+
+  async createProduct(createProductDto: CreateProductDto) {
+    return this.productModel.create({
+      ...createProductDto,
+      status: ProductStatus.IN_STOCK,
+    });
   }
 }

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { MongooseQueryOptions } from 'mongoose';
 import { ProductRepository } from './product.repository';
 import { getListProductsQueryDto } from './dtos/getListProduct.dto';
+import { UpdateProductDto } from './dtos/updateProduct.dto';
+import { CreateProductDto } from './dtos/createProduct.dto';
 
 @Injectable()
 export class ProductService {
@@ -48,6 +50,18 @@ export class ProductService {
         _id: product_id,
       },
       { $inc: { stock: -stock_consumed } },
+    );
+  }
+
+  async createProduct(createProductDto: CreateProductDto) {
+    return this.productRepository.createProduct(createProductDto);
+  }
+
+  async updateProduct(product_id: string, updateProductDto: UpdateProductDto) {
+    const query = { _id: product_id };
+    return this.productRepository.findOneProductAndUpdate(
+      query,
+      updateProductDto,
     );
   }
 }
