@@ -12,7 +12,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtDecodedData, Public } from 'src/common/decorators/auth.decorator';
 import { JwtPayload } from 'src/auth/dtos/jwt-payload.dto';
-import { CustomerService } from './customer.service';
+import { AdminAccountService } from './admin-account.service';
 import { ChangePasswordDto } from './dtos/changePassword.dto';
 import { ChangeProfileDto } from './dtos/changeProfile.dto';
 import { EmailDto } from './dtos/email.dto';
@@ -21,25 +21,21 @@ import { ResetPasswordDto } from './dtos/resetPassword.dto';
 
 @ApiTags('account')
 @Controller('account')
-export class CustomerAccountController {
-  constructor(private readonly customerService: CustomerService) {}
+export class AdminAccountController {
+  constructor(private readonly adminService: AdminAccountService) {}
 
   @ApiBearerAuth()
-  @ApiOperation({ description: 'Get current customer account' })
+  @ApiOperation({ description: 'Get current admin account' })
   @Get('')
-  async getCurrentCustomerAccountInformations(
-    @JwtDecodedData() data: JwtPayload,
-  ) {
-    return this.customerService.getCurrentCustomerAccountInformation(
-      data.email,
-    );
+  async getCurrentAdminAccountInformations(@JwtDecodedData() data: JwtPayload) {
+    return this.adminService.getCurrentAdminAccountInformation(data.email);
   }
 
   @Public()
   @Post('')
   @ApiOperation({ description: 'Register new account' })
   async register(@Body() registerUserDto: RegisterUserDto) {
-    await this.customerService.registerUser(registerUserDto);
+    await this.adminService.registerUser(registerUserDto);
     return {
       message: 'Success',
     };
@@ -54,7 +50,7 @@ export class CustomerAccountController {
     @JwtDecodedData() jwtPayload: JwtPayload,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    await this.customerService.changePassword(
+    await this.adminService.changePassword(
       jwtPayload.userId,
       changePasswordDto,
     );
@@ -72,10 +68,7 @@ export class CustomerAccountController {
     @Body() changeProfileDto: ChangeProfileDto,
     @JwtDecodedData() jwtPayload: JwtPayload,
   ) {
-    await this.customerService.changeProfile(
-      jwtPayload.userId,
-      changeProfileDto,
-    );
+    await this.adminService.changeProfile(jwtPayload.userId, changeProfileDto);
     return {
       message: 'Success',
     };
@@ -85,7 +78,7 @@ export class CustomerAccountController {
   @Public()
   @Get('/register/verify/:active_token')
   async verify(@Param('active_token') activeToken: string) {
-    return this.customerService.verifyActiveForCustomer(activeToken);
+    return this.adminService.verifyActiveForAdmin(activeToken);
   }
 
   @ApiOperation({
@@ -95,7 +88,7 @@ export class CustomerAccountController {
   @Post('/forgot-password')
   @HttpCode(HttpStatus.OK)
   async sendResetPasswordRequest(@Body() emailDto: EmailDto) {
-    await this.customerService.sendResetPasswordRequest(emailDto.email);
+    await this.adminService.sendResetPasswordRequest(emailDto.email);
     return {
       message: 'Send reset password confirmation email success succesfully',
     };
@@ -105,7 +98,7 @@ export class CustomerAccountController {
   @Public()
   @Get('/forgot-password/verify/:active_token')
   async verifyActiveToken(@Param('active_token') active_token: string) {
-    await this.customerService.verifyActiveToken(active_token);
+    await this.adminService.verifyActiveToken(active_token);
     return {
       message: 'Verified Token Successfully',
     };
@@ -116,7 +109,7 @@ export class CustomerAccountController {
   @HttpCode(HttpStatus.OK)
   @Post('/forgot-password/updatePassword')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
-    await this.customerService.resetPassword(
+    await this.adminService.resetPassword(
       resetPasswordDto.active_token,
       resetPasswordDto,
     );

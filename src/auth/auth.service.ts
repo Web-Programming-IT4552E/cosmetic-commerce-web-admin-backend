@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { CustomerService } from 'src/customer/customer.service';
+import { AdminAccountService } from 'src/admin/admin-account.service';
 import { ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisCache } from 'cache-manager-redis-yet';
@@ -17,7 +17,7 @@ export class AuthService {
   constructor(
     @Inject(CACHE_MANAGER) private redisCache: RedisCache,
     private readonly jwtService: JwtService,
-    private readonly customerService: CustomerService,
+    private readonly adminService: AdminAccountService,
     private readonly configService: ConfigService,
   ) {
     this.APP_SESSION_PREFIX = `${this.configService.get('APP_NAME')}${
@@ -41,7 +41,7 @@ export class AuthService {
 
   async login(loginRequestDto: LoginRequestDto) {
     const { email, password } = { ...loginRequestDto };
-    const user = await this.customerService.getCustomerByEmailAlongWithPassword(
+    const user = await this.adminService.getAdminByEmailAlongWithPassword(
       email,
     );
     if (!user) {

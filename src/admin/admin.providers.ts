@@ -6,17 +6,17 @@ import {
 import { User } from 'src/user/schemas/user.schema';
 import { UserType } from '../user/enums/user-type.enum';
 import { DATABASE_CONNECTION_NAME } from '../database/database.constants';
-import { Customer } from './schemas/customer.schema';
+import { Admin } from './schemas/admin.schema';
 
-export const customerProviders: FactoryProvider[] = [
-  ...[Customer].map<FactoryProvider>((ModelClass) => ({
+export const adminProviders: FactoryProvider[] = [
+  ...[Admin].map<FactoryProvider>((ModelClass) => ({
     provide: ModelClass,
     inject: [DATABASE_CONNECTION_NAME],
     useFactory: () =>
       getDiscriminatorModelForClass(
         getModelForClass(User),
-        Customer,
-        UserType.CUSTOMER,
+        Admin,
+        UserType.ADMIN,
       ),
   })),
 ];

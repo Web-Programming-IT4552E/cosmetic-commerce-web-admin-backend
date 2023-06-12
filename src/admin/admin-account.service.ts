@@ -5,18 +5,16 @@ import { UserStatus } from 'src/user/enums/user-status.enum';
 import { UserType } from 'src/user/enums/user-type.enum';
 import { MailService } from 'src/mailer/mail.service';
 import { ConfigService } from '@nestjs/config';
-import { CustomerRepository } from './customer.repository';
 import { ChangePasswordDto } from './dtos/changePassword.dto';
 import { ChangeProfileDto } from './dtos/changeProfile.dto';
 import { RegisterUserDto } from './dtos/registerUser.dto';
 import { ResetPasswordDto } from './dtos/resetPassword.dto';
-import { CustomerRankEntry } from './enums/customer-rank-entry.enum';
-import { CustomerRank } from './enums/customer-rank.enum';
+import { AdminRepository } from './admin-account.repository';
 
 @Injectable()
-export class CustomerService {
+export class AdminAccountService {
   constructor(
-    private readonly customerRepository: CustomerRepository,
+    private readonly adminAccountRepository: AdminRepository,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
   ) {}
@@ -29,12 +27,12 @@ export class CustomerService {
     return compareSync(password, hashedPassword);
   }
 
-  async getCurrentCustomerAccountInformation(email: string) {
-    return this.customerRepository.getCustomerByEmail(email);
+  async getCurrentAdminAccountInformation(email: string) {
+    return this.adminAccountRepository.getAdminByEmail(email);
   }
 
-  async getCustomerByEmailAlongWithPassword(email: string) {
-    return this.customerRepository.getCustomerByEmailAlongWithPassword(email);
+  async getAdminByEmailAlongWithPassword(email: string) {
+    return this.adminAccountRepository.getAdminByEmailAlongWithPassword(email);
   }
 
   async registerUser(registerUserDto: RegisterUserDto) {
@@ -43,16 +41,12 @@ export class CustomerService {
     const del_flag = false;
     const status = UserStatus.NEW;
     const active_token = uuidv4();
-    const rank_point = CustomerRankEntry.BRONZE;
-    const rank = CustomerRank.BRONZE;
     const point = 0;
-    const userCreated = await this.customerRepository.createUser({
+    const userCreated = await this.adminAccountRepository.createUser({
       ...registerUserDto,
       hashed_password,
       type,
       del_flag,
-      rank,
-      rank_point,
       point,
       status,
       active_token,
@@ -81,13 +75,13 @@ export class CustomerService {
         changePasswordDto.new_password,
         10,
       );
-      const user = await this.customerRepository.findOneCustomerWithPassword(
+      const user = await this.adminAccountRepository.findOneAdminWithPassword(
         query,
       );
       if (!this.comparePassword(old_password, user.hashed_password)) {
         throw new Error('Old Password is incorrect');
       } else {
-        await this.customerRepository.findOneCustomerAndUpdate(query, {
+        await this.adminAccountRepository.findOneAdminAndUpdate(query, {
           hashed_password: new_hashed_password,
         });
       }
@@ -96,13 +90,13 @@ export class CustomerService {
 
   async changeProfile(user_id: string, changeProfileDto: ChangeProfileDto) {
     const query = { _id: user_id, del_flag: false };
-    return this.customerRepository.findOneCustomerAndUpdate(query, {
+    return this.adminAccountRepository.findOneAdminAndUpdate(query, {
       ...changeProfileDto,
     });
   }
 
-  async verifyActiveForCustomer(active_token: string) {
-    const user = await this.customerRepository.findOneCustomerAndUpdate(
+  async verifyActiveForAdmin(active_token: string) {
+    const user = await this.adminAccountRepository.findOneAdminAndUpdate(
       {
         active_token,
         del_flag: false,
@@ -130,12 +124,12 @@ export class CustomerService {
       status: { $in: [1, 2] },
       del_flag: false,
     };
-    const user = await this.customerRepository.findOneCustomer(query);
+    const user = await this.adminAccountRepository.findOneAdmin(query);
     if (!user) {
       throw new BadRequestException('User not found !');
     }
     const otp_active_token = uuidv4();
-    await this.customerRepository.findOneCustomerAndUpdate(query, {
+    await this.adminAccountRepository.findOneAdminAndUpdate(query, {
       active_token: otp_active_token,
     });
     await this.mailService.sendResetPasswordEmail(
@@ -148,7 +142,7 @@ export class CustomerService {
   }
 
   async verifyActiveToken(active_token: string) {
-    const user = await this.customerRepository.findOneCustomer({
+    const user = await this.adminAccountRepository.findOneAdmin({
       active_token,
       del_flag: false,
       status: UserStatus.ACTIVE,
@@ -169,7 +163,7 @@ export class CustomerService {
       del_flag: false,
       status: UserStatus.ACTIVE,
     };
-    const user = await this.customerRepository.findOneCustomer(query);
+    const user = await this.adminAccountRepository.findOneAdmin(query);
     if (!user) {
       throw new BadRequestException(
         'This active_token does not exist or user does not exist !',
@@ -182,7 +176,7 @@ export class CustomerService {
       );
     }
     const new_hashed_password = this.hashPassword(new_password, 10);
-    await this.customerRepository.findOneCustomerAndUpdate(query, {
+    await this.adminAccountRepository.findOneAdminAndUpdate(query, {
       hashed_password: new_hashed_password,
       active_token: uuidv4(),
     });

@@ -9,7 +9,7 @@ import { ProductModule } from './product/product.module';
 import { OrderModule } from './order/order.module';
 import { QueueModule } from './queue/queue.module';
 import { MailModule } from './mailer/mail.module';
-import { CustomerModule } from './customer/customer.module';
+import { AdminModule } from './admin/admin.module';
 import { RedisCacheModule } from './cache/redis/redis-cache.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './common/guards/auth.guard';
@@ -29,7 +29,7 @@ import { DiscountCodeModule } from './discount_code/discount_code.module';
     ProductModule,
     OrderModule,
     MailModule,
-    CustomerModule,
+    AdminModule,
     RedisCacheModule,
     AuthModule,
     CommonModule,
