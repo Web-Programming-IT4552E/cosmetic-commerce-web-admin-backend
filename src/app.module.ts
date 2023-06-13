@@ -17,6 +17,7 @@ import { CommonModule } from './common/common.module';
 import { ShippingAddressModule } from './shipping_address/shipping_address.module';
 import { DiscountCodeModule } from './discount_code/discount_code.module';
 import { RoleGuard } from './common/guards/roles.guard';
+import { CustomerModule } from './customer/customer.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { RoleGuard } from './common/guards/roles.guard';
     AdminModule,
     RedisCacheModule,
     AuthModule,
+    CustomerModule,
     CommonModule,
     ShippingAddressModule,
     DiscountCodeModule,
