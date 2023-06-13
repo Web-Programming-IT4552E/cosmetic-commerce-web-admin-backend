@@ -74,4 +74,8 @@ export class CustomerService {
       );
     }
   }
+
+  async findCustomerWithQuery(query: any) {
+    return this.customerRepository.findCustomer(query);
+  }
 }

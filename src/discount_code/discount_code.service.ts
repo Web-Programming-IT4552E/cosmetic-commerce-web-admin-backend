@@ -1,45 +1,25 @@
+/* eslint-disable no-restricted-syntax */
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { CustomerService } from 'src/customer/customer.service';
 import { Types } from 'mongoose';
+import { User } from 'src/user/schemas/user.schema';
 import { GetListDiscountCodeQueryDto } from './dtos/getListDiscountCode.query.dto';
 import { DiscountCodeRepository } from './discount_code.repository';
-import { AmountType } from './enums/amount-type.enum';
-import { OrderInformationsDto } from './dtos/orderInformations.dto';
+import { CreateDiscountCodeDto } from './dtos/createDiscountCode.dto';
+import { DiscountCodeCondition } from './dtos/discount_code_condition.dto';
 
 @Injectable()
 export class DiscountCodeService {
   constructor(
     private readonly discountCodeRepository: DiscountCodeRepository,
+    private readonly customerService: CustomerService,
   ) {}
 
   async getListDiscountCodes(
     getListDiscountCodeQueryDto: GetListDiscountCodeQueryDto,
-    user_id: string,
   ) {
-    const query = {
-      applied_user: {
-        $elemMatch: {
-          user_id: new Types.ObjectId(user_id),
-          remaining: { $gt: 0 },
-        },
-      },
-      expired_time: { $gt: new Date() },
-      total_remaining: { $gt: 0 },
-    };
-    const selectOptions = {
-      name: 1,
-      code: 1,
-      min_order_value: 1,
-      description: 1,
-      total_remaining: 1,
-      expired_time: 1,
-      applied_user: {
-        $filter: {
-          input: '$applied_user',
-          as: 'out',
-          cond: { $eq: ['$$out.user_id', new Types.ObjectId(user_id)] },
-        },
-      },
-    };
+    const query = {};
+    const selectOptions = {};
     const { page, limit } = { ...getListDiscountCodeQueryDto };
     const data =
       await this.discountCodeRepository.getListDiscountCodesWithPaginationAndSelect(
@@ -60,139 +40,115 @@ export class DiscountCodeService {
     };
   }
 
-  getDetailDiscountCode(discount_code_id: string, user_id: string) {
+  getDetailDiscountCode(discount_code_id: string) {
     const query = {
       _id: discount_code_id,
-      applied_user: {
-        $elemMatch: {
-          user_id: new Types.ObjectId(user_id),
-          remaining: { $gt: 0 },
-        },
-      },
-      expired_time: { $gt: new Date() },
-      total_remaining: { $gt: 0 },
     };
-    const selectOptions = {
-      name: 1,
-      code: 1,
-      min_order_value: 1,
-      description: 1,
-      total_remaining: 1,
-      expired_time: 1,
-      applied_user: {
-        $filter: {
-          input: '$applied_user',
-          as: 'out',
-          cond: { $eq: ['$$out.user_id', new Types.ObjectId(user_id)] },
-        },
-      },
-    };
+    const selectOptions = {};
     return this.discountCodeRepository.getDiscountCodeDetailByID(
       query,
       selectOptions,
     );
   }
 
-  async tryApplyingDiscountAmountOnOrder(
-    discount_code: string,
-    user_id: string,
-    total_product_cost: number,
-  ) {
-    const orderValue = total_product_cost;
-    const discountCode =
-      await this.discountCodeRepository.getDiscountCodeDetailByID(
-        {
-          code: discount_code,
-          applied_user: {
-            $elemMatch: {
-              user_id: new Types.ObjectId(user_id),
-              remaining: { $gt: 0 },
-            },
-          },
-          expired_time: { $gt: new Date() },
-          total_remaining: { $gt: 0 },
-        },
-        {},
+  async createDiscountCode(createDiscountCodeDto: CreateDiscountCodeDto) {
+    const created_time = new Date();
+    let conditionToSaved;
+    let userQuery;
+    if (createDiscountCodeDto.customer_applying_condition) {
+      conditionToSaved = JSON.stringify(
+        createDiscountCodeDto.customer_applying_condition,
       );
-    if (!discountCode)
-      throw new BadRequestException(
-        'Cannot apply this discount code : Already expired or reached maximum',
-      );
-    if (orderValue < discountCode.min_order_value) {
-      throw new BadRequestException(
-        "The order value didn't reach the required minimum order value",
+      userQuery = await this.getConditionsFromQuery(
+        createDiscountCodeDto.customer_applying_condition,
       );
     }
-    if (discountCode.amount_type === AmountType.DIRECT) {
-      return orderValue > discountCode.discount_amount
-        ? discountCode.discount_amount.toString()
-        : orderValue.toString();
+    let users: any = await this.customerService.findCustomerWithQuery(
+      userQuery,
+    );
+    if (!users)
+      throw new BadRequestException('Found 0 users match your condition !');
+    users = users.map((x: User) => x._id.toString());
+    users = [...new Set(users.map((x: User) => x.toString()))];
+    const newDiscountCode = Object({
+      ...createDiscountCodeDto,
+      customer_applying_condition: conditionToSaved,
+      created_time,
+      applied_user: [],
+    });
+    for (const x of users) {
+      newDiscountCode.applied_user.push({
+        user_id: new Types.ObjectId(x),
+        remaining: createDiscountCodeDto.maximum_apply_time_per_user,
+      });
     }
-    if (discountCode.amount_type === AmountType.PERCENT) {
-      return ((orderValue * discountCode.discount_amount) / 100).toString();
-    }
-    return '0';
+    await this.discountCodeRepository.createDiscountCode(newDiscountCode);
   }
 
-  async applyingDiscountOnOrder(
-    discount_code: string,
-    user_id: string,
-    orderInformationDto: OrderInformationsDto,
-  ) {
-    const orderValue = orderInformationDto.total_product_cost;
-    const query = {
-      code: discount_code,
-      applied_user: {
-        $elemMatch: {
-          user_id: new Types.ObjectId(user_id),
-          remaining: { $gt: 0 },
-        },
+  async inactivateDiscountCode(discount_code_id: string) {
+    return this.discountCodeRepository.findOneAndUpdateDiscountCode(
+      { _id: discount_code_id },
+      {
+        total_remaining: 0,
+        expired_time: new Date(),
       },
-      expired_time: { $gt: new Date() },
-      total_remaining: { $gt: 0 },
-    };
-    const selectOptions = {
-      applied_user: 1,
-      min_order_value: 1,
-      amount_type: 1,
-      discount_type: 1,
-      discount_amount: 1,
-      total_remaining: 1,
-    };
-    const discountCode =
-      await this.discountCodeRepository.getDiscountCodeDetailByID(
-        query,
-        selectOptions,
-      );
-    if (!discountCode)
-      throw new BadRequestException(
-        'Cannot apply this discount code : Already expired or reached maximum',
-      );
-    if (orderValue < discountCode.min_order_value) {
-      throw new BadRequestException(
-        "The order value didn't reach the required minimum order value",
-      );
+    );
+  }
+
+  private async getConditionsFromQuery(objectToDecode: DiscountCodeCondition) {
+    for (const x of objectToDecode) {
+      for (const y of x) {
+        const newY = {};
+        const newKey = y.object;
+        switch (y.condition) {
+          case 'greater than': {
+            newY[newKey] = {
+              $gt: y.value,
+            };
+            break;
+          }
+          case 'greater than or equal': {
+            newY[newKey] = {
+              $gte: y.value,
+            };
+            break;
+          }
+          case 'less than': {
+            newY[newKey] = {
+              $lt: y.value,
+            };
+            break;
+          }
+          case 'less than or equal': {
+            newY[newKey] = {
+              $lte: y.value,
+            };
+            break;
+          }
+          case 'not equal': {
+            newY[newKey] = {
+              $ne: y.value,
+            };
+            break;
+          }
+          default: {
+            newY[newKey] = y.value;
+            break;
+          }
+        }
+        // eslint-disable-next-line guard-for-in
+        for (const member in y) delete y[member];
+        Object.assign(y, newY);
+      }
     }
-    const indexOfUserInDiscountCodeAppliedUsers: number =
-      discountCode.applied_user.findIndex((object) => {
-        return object.user_id.toString() === user_id.toString();
-      });
-    const newAppliedUserArray = discountCode.applied_user;
-    newAppliedUserArray[indexOfUserInDiscountCodeAppliedUsers].remaining -= 1;
-    await this.discountCodeRepository.findOneAndUpdateDiscountCode(query, {
-      $inc: {
-        total_remaining: -1,
-      },
-      applied_user: newAppliedUserArray,
+    const resultArray = objectToDecode.map((x) => {
+      return {
+        $and: x,
+      };
     });
-    if (discountCode.amount_type === AmountType.DIRECT) {
-      return orderValue > discountCode.discount_amount
-        ? discountCode.discount_amount.toString()
-        : orderValue.toString();
-    }
-    if (discountCode.amount_type === AmountType.PERCENT) {
-      return ((orderValue * discountCode.discount_amount) / 100).toString();
-    }
-    return '0';
+    const result = {};
+    // eslint-disable-next-line @typescript-eslint/dot-notation
+    result['$or'] = resultArray;
+    return result;
   }
 }

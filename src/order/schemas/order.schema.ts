@@ -66,7 +66,7 @@ export class Order {
   status: OrderStatus;
 
   @prop()
-  create_time?: Date;
+  created_time?: Date;
 
   @prop()
   updated_at?: Date;

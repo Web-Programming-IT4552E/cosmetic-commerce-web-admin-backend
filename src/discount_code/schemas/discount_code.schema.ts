@@ -7,7 +7,8 @@ import { DiscountType } from '../enums/discount-type.enum';
   options: { allowMixed: 1 },
   schemaOptions: {
     timestamps: {
-      createdAt: 'create_time',
+      createdAt: 'created_time',
+      updatedAt: 'updated_time',
     },
     collection: 'discount_codes',
   },
@@ -44,7 +45,7 @@ export class DiscountCode {
   total_remaining: number;
 
   @prop({ required: false })
-  create_time: Date;
+  created_time: Date;
 
   @prop({ required: true })
   expired_time: Date;

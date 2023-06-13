@@ -25,6 +25,10 @@ export class CustomerRepository {
       .lean();
   }
 
+  async findCustomer(query: FilterQuery<Customer>) {
+    return this.customerModel.find(query).lean();
+  }
+
   async countCustomerWithQuery(query: FilterQuery<Customer>): Promise<number> {
     return this.customerModel.countDocuments(query);
   }

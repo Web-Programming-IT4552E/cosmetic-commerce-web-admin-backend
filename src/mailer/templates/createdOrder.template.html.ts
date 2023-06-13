@@ -18,7 +18,7 @@ interface Data {
   shipping_cost: number;
   shipping_code: string;
   order_id: string;
-  create_time: Date;
+  created_time: Date;
   shipping_unit: string;
   shipping_address: Shipping;
   status: number;
@@ -880,7 +880,7 @@ button.es-button {
                                                                                       <td
                                                                                           style="font-size: 14px; line-height: 150%;">
                                                                                           ${
-                                                                                            order.create_time
+                                                                                            order.created_time
                                                                                           }</td>
                                                                                   </tr>
                                                                                   <tr>                                                                                                       <tr>

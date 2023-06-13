@@ -8,8 +8,8 @@ import { UserType } from '../enums/user-type.enum';
 @modelOptions({
   schemaOptions: {
     timestamps: {
-      createdAt: 'create_time',
-      updatedAt: 'update_time',
+      createdAt: 'created_time',
+      updatedAt: 'updated_time',
     },
     discriminatorKey: 'type',
   },
