@@ -33,7 +33,7 @@ export class CustomerRepository {
     return this.customerModel.countDocuments(query);
   }
 
-  async getCustomerDetail(query: FilterQuery<Customer>) {
+  async getCustomerDetail(query: FilterQuery<Customer>): Promise<Customer> {
     return this.customerModel.findOne(query).lean();
   }
 

@@ -3,6 +3,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserStatus } from '../user/enums/user-status.enum';
 import { CustomerRepository } from './customer.repository';
 import { GetListCustomerQueryDto } from './dtos/getListCustomerQuery.dto';
+import { UpdateCustomerRankAndPointDto } from './dtos/updateCustomerRankAndPoint.dto';
 
 @Injectable()
 export class CustomerService {
@@ -77,5 +78,15 @@ export class CustomerService {
 
   async findCustomerWithQuery(query: any) {
     return this.customerRepository.findCustomer(query);
+  }
+
+  async updateCustomerRankAndPoint(
+    customer_id: string,
+    updateCustomerRankAndPointDto: UpdateCustomerRankAndPointDto,
+  ) {
+    return this.customerRepository.updateCustomerDetail(
+      { _id: customer_id },
+      { ...updateCustomerRankAndPointDto },
+    );
   }
 }

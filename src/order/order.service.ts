@@ -1,12 +1,15 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { CustomerRankEntry } from 'src/customer/enums/customer-rank-entry.enum';
+import { CustomerService } from 'src/customer/customer.service';
 import { ProductService } from '../product/product.service';
 import { OrderRepository } from './order.repository';
 import { MailService } from '../mailer/mail.service';
 import { GetListOrderQuery } from './dtos/getListOrderQuery.dto';
 import { ConfirmDeliveryOrderDto } from './dtos/confirmDeliveryOrder.dto';
 import { OrderStatus } from './enums/order-status.enum';
+import { POINT_WEIGHT_RATIO } from './constants/point-weight-ratio.constant';
 
 @Injectable()
 export class OrderService {
@@ -14,6 +17,7 @@ export class OrderService {
     private readonly orderRepository: OrderRepository,
     private readonly productService: ProductService,
     private readonly mailService: MailService,
+    private readonly customerService: CustomerService,
   ) {}
 
   async getListOrder(getListOrderQuery: GetListOrderQuery) {
@@ -77,21 +81,35 @@ export class OrderService {
       throw new BadRequestException(
         'Can not confirm sucessfully delivered this order ! The order does not exist or you are trying to confirm successive of a non delivery-confirmation order !',
       );
-    // TODO
-    // if (order.user_id) {
-    //   const toUpdatePointCustomer = await CustomerModel.findById(order.user_id);
-    //   toUpdatePointCustomer.point += order.total_product_cost;
-    //   toUpdatePointCustomer.rank_point += order.total_product_cost;
-    //   const ranks = Object.keys(CustomerRankEntry)
-    //     .filter(
-    //       (key) =>
-    //         Number.isNaN(Number(CustomerRankEntry[key])) &&
-    //         Number(key) <= toUpdatePointCustomer.rank_point,
-    //     )
-    //     .map(Number);
-    //   toUpdatePointCustomer.rank = ranks.indexOf(Math.max(...ranks));
-    //   await toUpdatePointCustomer.save();
-    // }
+    if (updatedOrder.user_id) {
+      const toUpdatePointCustomer =
+        await this.customerService.getCustomerDetails(
+          updatedOrder.user_id.toString(),
+        );
+      toUpdatePointCustomer.point += Math.round(
+        updatedOrder.total_product_cost * POINT_WEIGHT_RATIO,
+      );
+      toUpdatePointCustomer.rank_point += Math.round(
+        updatedOrder.total_product_cost * POINT_WEIGHT_RATIO,
+      );
+      const ranks = Object.keys(CustomerRankEntry)
+        .filter(
+          (key) =>
+            Number.isNaN(Number(CustomerRankEntry[key])) &&
+            Number(key) <= toUpdatePointCustomer.rank_point,
+        )
+        .map(Number);
+      toUpdatePointCustomer.rank = ranks.indexOf(Math.max(...ranks));
+      const updateQuery = {
+        rank: toUpdatePointCustomer.rank,
+        point: toUpdatePointCustomer.point,
+        rank_point: toUpdatePointCustomer.rank_point,
+      };
+      await this.customerService.updateCustomerRankAndPoint(
+        updatedOrder.user_id.toString(),
+        updateQuery,
+      );
+    }
     await this.mailService.sendOrderStatusChangedEmail(
       updatedOrder.customer_email,
       updatedOrder,
