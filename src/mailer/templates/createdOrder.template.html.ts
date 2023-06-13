@@ -1193,7 +1193,127 @@ button.es-button {
                                   </td>
                               </tr>
                               <table class="es-content" cellspacing="0" cellpadding="0" align="center">
-       
+                              <tr>
+                              <td class="esd-structure es-p20r es-p20l" esd-general-paddings-checked="false"
+                                  align="left">
+                                  <table width="100%" cellspacing="0" cellpadding="0">
+                                      <tbody>
+                                          <tr>
+                                              <td class="esd-container-frame" width="560" valign="top"
+                                                  align="center">
+                                                  <table width="100%" cellspacing="0" cellpadding="0">
+                                                      <tbody>
+                                                          <tr>
+                                                              <td class="esd-block-spacer es-p10b" align="center"
+                                                                  style="font-size:0">
+                                                                  <table width="100%" height="100%"
+                                                                      cellspacing="0" cellpadding="0" border="0">
+                                                                      <tbody>
+                                                                          <tr>
+                                                                              <td
+                                                                                  style="border-bottom: 1px solid #efefef; background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%; height: 1px; width: 100%; margin: 0px;">
+                                                                              </td>
+                                                                          </tr>
+                                                                      </tbody>
+                                                                  </table>
+                                                              </td>
+                                                          </tr>
+                                                      </tbody>
+                                                  </table>
+                                              </td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                              </td>
+                          </tr>
+                          <tr>
+                              <td class="esd-structure es-p5t es-p30b es-p40r es-p20l" align="left">
+                                  <table width="100%" cellspacing="0" cellpadding="0">
+                                      <tbody>
+                                          <tr>
+                                              <td class="esd-container-frame" width="540" valign="top"
+                                                  align="center">
+                                                  <table width="100%" cellspacing="0" cellpadding="0">
+                                                      <tbody>
+                                                          <tr>
+                                                              <td class="esd-block-text" align="right">
+                                                                  <table style="width: 500px;"
+                                                                      class="cke_show_border" cellspacing="1"
+                                                                      cellpadding="1" border="0" align="right">
+                                                                      <tbody>
+                                                                          <tr>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%;">
+                                                                                  Subtotal (${
+                                                                                    order
+                                                                                      .products
+                                                                                      .length
+                                                                                  } Items):</td>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%;">
+                                                                                  ${
+                                                                                    order.total_product_cost
+                                                                                  } USD</td>
+                                                                          </tr>
+                                                                          <tr>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%;">
+                                                                                  Flat-rate Shipping:</td>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%; color: #d48344;">
+                                                                                  <strong>${
+                                                                                    order.shipping_cost ||
+                                                                                    order.shipping_cost ===
+                                                                                      0
+                                                                                      ? `${order.shipping_cost} USD`
+                                                                                      : 'Will be notified later'
+                                                                                  }</strong></td>
+                                                                          </tr>
+                                                                          <tr>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%;">
+                                                                                  Discount:</td>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%;">
+                                                                                  ${
+                                                                                    order.discount
+                                                                                  } USD</td>
+                                                                          </tr>
+                                                                          <tr>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%;">
+                                                                                  <strong>Order Total:</strong>
+                                                                              </td>
+                                                                              <td
+                                                                                  style="text-align: right; font-size: 18px; line-height: 150%; color: #d48344;">
+                                                                                  <strong>${
+                                                                                    order.shipping_cost
+                                                                                      ? order.total_product_cost +
+                                                                                        order.shipping_cost -
+                                                                                        order.discount
+                                                                                      : order.total_product_cost -
+                                                                                        order.discount
+                                                                                  } USD</strong>
+                                                                              </td>
+                                                                          </tr>
+                                                                      </tbody>
+                                                                  </table>
+                                                                  <p style="line-height: 150%;"><br></p>
+                                                              </td>
+                                                          </tr>
+                                                      </tbody>
+                                                  </table>
+                                              </td>
+                                          </tr>
+                                      </tbody>
+                                  </table>
+                              </td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </td>
+          </tr>
+        </tbody>
       </table>
 
       <table cellpadding="0" cellspacing="0" class="es-footer" align="center">

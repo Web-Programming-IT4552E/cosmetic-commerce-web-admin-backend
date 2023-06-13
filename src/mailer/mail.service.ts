@@ -5,7 +5,7 @@ import { EMAIL_QUEUE } from './constants/mail.constant';
 import {
   ACCOUNT_VERIFICATION_SUCCESS,
   CREATE_NEW_CUSTOMER_ACCOUNT_VERIFIFICATION,
-  CREATED_NEW_ORDER_NOTIFICATION,
+  CHANGE_ORDER_STATUS_NOTIFICATION,
   RESET_PASSWORD_VERIFICATION,
 } from './constants/queueName.constant';
 
@@ -15,14 +15,14 @@ export class MailService {
 
   constructor(@InjectQueue(EMAIL_QUEUE) private readonly mailQueue: Queue) {}
 
-  public async sendNewOrderCreatedEmail(
+  public async sendOrderStatusChangedEmail(
     customer_email: string,
-    createdOrder: any,
+    updatedOrder: any,
   ): Promise<void> {
     try {
-      await this.mailQueue.add(CREATED_NEW_ORDER_NOTIFICATION, {
+      await this.mailQueue.add(CHANGE_ORDER_STATUS_NOTIFICATION, {
         emailAddress: customer_email,
-        createdOrder,
+        updatedOrder,
       });
     } catch (error) {
       this._logger.error(

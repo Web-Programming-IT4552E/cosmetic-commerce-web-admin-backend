@@ -9,11 +9,12 @@ import {
 } from '@nestjs/bull';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
+import { OrderStatus } from 'src/order/enums/order-status.enum';
 import { getOrderEmailTemplate } from './templates/createdOrder.template.html';
 import { EMAIL_QUEUE } from './constants/mail.constant';
 import {
   ACCOUNT_VERIFICATION_SUCCESS,
-  CREATED_NEW_ORDER_NOTIFICATION,
+  CHANGE_ORDER_STATUS_NOTIFICATION,
   CREATE_NEW_CUSTOMER_ACCOUNT_VERIFIFICATION,
   RESET_PASSWORD_VERIFICATION,
 } from './constants/queueName.constant';
@@ -49,25 +50,44 @@ export class MailProcessor {
     );
   }
 
-  @Process(CREATED_NEW_ORDER_NOTIFICATION)
+  @Process(CHANGE_ORDER_STATUS_NOTIFICATION)
   public async notifyOrderCreated(
-    job: Job<{ emailAddress: string; createdOrder: any }>,
+    job: Job<{ emailAddress: string; updatedOrder: any }>,
   ): Promise<void> {
     this.logger.log(
-      `Sending CREATED_NEW_ORDER_NOTIFICATION email to '${job.data.emailAddress}'`,
+      `Sending CHANGE_ORDER_STATUS_NOTIFICATION email to '${job.data.emailAddress}'`,
     );
-    const template = getOrderEmailTemplate(job.data.createdOrder);
+    const template = getOrderEmailTemplate(job.data.updatedOrder);
     try {
+      let subject: string;
+      switch (job.data.updatedOrder.status) {
+        case OrderStatus.CONFIRMED: {
+          subject = 'Confirm Order';
+          break;
+        }
+        case OrderStatus.DONE: {
+          subject = 'Confirm Successfully Delivered And Paid Order';
+          break;
+        }
+        case OrderStatus.CANCELLED: {
+          subject = 'Cancel Order';
+          break;
+        }
+        default: {
+          subject = 'Confirm Order';
+          break;
+        }
+      }
       await this.mailerService.sendMail({
         to: job.data.emailAddress,
         from: this.configService.get('EMAIL_ADDRESS'),
-        subject: 'Create Order Notification',
+        subject,
         html: template,
       });
     } catch (e) {
       this.logger.error(e.message);
       this.logger.error(
-        `Failed to send CREATED_NEW_ORDER_NOTIFICATION email to '${job.data.emailAddress}'`,
+        `Failed to send CHANGE_ORDER_STATUS_NOTIFICATION email to '${job.data.emailAddress}'`,
       );
     }
   }

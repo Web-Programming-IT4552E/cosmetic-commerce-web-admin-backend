@@ -52,26 +52,28 @@ export class OrderService {
       status: OrderStatus.CONFIRMED,
       ...confirmDeliveryOrderDto,
     };
-    const order = await this.orderRepository.findOneOrderAndUpdate(
+    const updatedOrder = await this.orderRepository.findOneOrderAndUpdate(
       query,
       updateOptions,
     );
-    if (!order)
+    if (!updatedOrder)
       throw new BadRequestException(
         'Can not confirm delivery this order ! The order does not exist or you are trying to confirm a non-new order !',
       );
-    // TODO
 
-    // await Mailer.confirmDeliveryOrder(order.customer_email, order_id);
-    return order;
+    await this.mailService.sendOrderStatusChangedEmail(
+      updatedOrder.customer_email,
+      updatedOrder,
+    );
+    return updatedOrder;
   }
 
   async confirmSucessfullyDeliveredOrder(order_id: string) {
-    const order = await this.orderRepository.findOneOrderAndUpdate(
+    const updatedOrder = await this.orderRepository.findOneOrderAndUpdate(
       { _id: order_id, status: OrderStatus.CONFIRMED },
       { status: OrderStatus.DONE },
     );
-    if (!order)
+    if (!updatedOrder)
       throw new BadRequestException(
         'Can not confirm sucessfully delivered this order ! The order does not exist or you are trying to confirm successive of a non delivery-confirmation order !',
       );
@@ -90,25 +92,29 @@ export class OrderService {
     //   toUpdatePointCustomer.rank = ranks.indexOf(Math.max(...ranks));
     //   await toUpdatePointCustomer.save();
     // }
-    // await Mailer.confirmSuccessfulOrder(order.customer_email, order_id);
-    return order;
+    await this.mailService.sendOrderStatusChangedEmail(
+      updatedOrder.customer_email,
+      updatedOrder,
+    );
+    return updatedOrder;
   }
 
   async cancelOrder(order_id: string) {
-    const order = await this.orderRepository.findOneOrderAndUpdate(
+    const updatedOrder = await this.orderRepository.findOneOrderAndUpdate(
       {
         _id: order_id,
         $or: [{ status: OrderStatus.NEW }, { status: OrderStatus.CONFIRMED }],
       },
       { status: OrderStatus.CANCELLED },
     );
-    if (!order)
+    if (!updatedOrder)
       throw new BadRequestException(
         'Can not cancel this order ! The order does not exist or you are trying to cancel a fully-successful/canceled order !',
       );
-    // TODO
-
-    // await Mailer.cancelOrder(order.customer_email, order_id);
-    return order;
+    await this.mailService.sendOrderStatusChangedEmail(
+      updatedOrder.customer_email,
+      updatedOrder,
+    );
+    return updatedOrder;
   }
 }
