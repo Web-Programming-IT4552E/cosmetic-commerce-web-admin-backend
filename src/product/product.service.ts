@@ -10,10 +10,13 @@ export class ProductService {
   constructor(private readonly productRepository: ProductRepository) {}
 
   async getAllProducts(getListProductQuery: getListProductsQueryDto) {
-    const { page, limit, name } = { ...getListProductQuery };
+    const { page, limit, name, category } = { ...getListProductQuery };
     const query: MongooseQueryOptions = {};
     if (name) {
       Object.assign(query, { name });
+    }
+    if (category) {
+      Object.assign(query, { category: { $in: category.split(',') } });
     }
     const total = await this.productRepository.countNumberOfProductWithQuery(
       query,
