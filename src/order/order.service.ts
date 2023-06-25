@@ -21,12 +21,20 @@ export class OrderService {
   ) {}
 
   async getListOrder(getListOrderQuery: GetListOrderQuery) {
-    const { page, limit, status } = { ...getListOrderQuery };
+    const { page, limit, status, start_time, end_time } = {
+      ...getListOrderQuery,
+    };
     const query = {};
     if (status) {
       Object.assign(query, {
         status: { $in: status.split(',').map((x) => +x) },
       });
+    }
+    if (start_time) {
+      Object.assign(query, { created_time: { $gte: start_time } });
+    }
+    if (end_time) {
+      Object.assign(query, { created_time: { $lte: end_time } });
     }
     const data = await this.orderRepository.getOrderList(query, page, limit);
     const total = await this.orderRepository.countNumberOfOrderWithQuery(query);
